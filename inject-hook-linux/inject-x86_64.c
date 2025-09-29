@@ -30,6 +30,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  
  */
 
+#include <sys/ptrace.h>    // ptrace 相关函数
+#include <sys/types.h>     // pid_t 等类型定义
+#include <sys/wait.h>      // waitpid 等函数
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,6 +42,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <inttypes.h>
 #include <wait.h>
 
+#include "inject.h"
 #include "utils.h"
 #include "ptrace.h"
 
@@ -216,6 +221,9 @@ int main(int argc, char** argv)
 	long mallocAddr = getFunctionAddress("malloc");
 	long freeAddr = getFunctionAddress("free");
 	long dlopenAddr = getFunctionAddress("__libc_dlopen_mode");
+	if(dlopenAddr == 0){
+		dlopenAddr = getFunctionAddress("dlopen");
+	}
 
 	// use the base address of libc to calculate offsets for the syscalls
 	// we want to use

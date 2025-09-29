@@ -37,7 +37,7 @@ void ptrace_attach(pid_t target)
 {
 	int waitpidstatus;
 
-	if(ptrace(PTRACE_ATTACH, target, NULL, NULL) == -1)
+	if(ptrace(PTRACE_ATTACH_MACRO, target, NULL, NULL) == -1)
 	{
 		fprintf(stderr, "ptrace(PTRACE_ATTACH) failed\n");
 		exit(1);
@@ -67,7 +67,7 @@ void remote_stop(pid_t target)
 		{
             if (WIFSIGNALED(waitpidstatus)) 
 			{
-                if (ptrace (PTRACE_CONT, NULL, WTERMSIG(waitpidstatus)) == -1)
+                if (ptrace (PTRACE_CONT_MACRO, NULL, WTERMSIG(waitpidstatus)) == -1)
 				{
 					fprintf(stderr, "ptrace(PTRACE_CONT) failed\n");
 				}
@@ -105,7 +105,7 @@ void remote_stop(pid_t target)
 
 void ptrace_detach(pid_t target)
 {
-	if (ptrace(PTRACE_DETACH, target, NULL, NULL) == -1)
+	if (ptrace(PTRACE_DETACH_MACRO, target, NULL, NULL) == -1)
 	{
 		fprintf(stderr, "ptrace(PTRACE_DETACH) failed\n");
 		exit(1);
@@ -136,7 +136,7 @@ void ptrace_getregs(pid_t target, struct user_regs_struct *regs)
 		exit(1);
 	}	
 #else
-	if(ptrace(PTRACE_GETREGS, target, 0, (long)regs) == -1)
+	if(ptrace(PTRACE_GETREGS_MACRO, target, 0, (long)regs) == -1)
 	{
 		fprintf(stderr, "ptrace(PTRACE_GETREGS) failed\n");
 		exit(1);
@@ -163,7 +163,7 @@ void ptrace_cont(pid_t target)
 	sleeptime->tv_sec = 0;
 	sleeptime->tv_nsec = 5000000;
 
-	if(ptrace(PTRACE_CONT, target, NULL, NULL) == -1)
+	if(ptrace(PTRACE_CONT_MACRO, target, NULL, NULL) == -1)
 	{
 		fprintf(stderr, "ptrace(PTRACE_CONT) failed\n");
 		exit(1);
@@ -192,13 +192,13 @@ void ptrace_setregs(pid_t target, const struct user_regs_struct *regs)
 {
 #ifdef USE_REGSET
     struct iovec iovec = { (void*)regs, sizeof(*regs) };
-	if(ptrace(PTRACE_SETREGSET, target, NT_PRSTATUS, &iovec) == -1)
+	if(ptrace(PTRACE_SETREGSET_MACRO, target, NT_PRSTATUS, &iovec) == -1)
 	{
 		fprintf(stderr, "ptrace(PTRACE_SETREGSET) failed\n");
 		exit(1);
 	}
 #else
- 	if(ptrace(PTRACE_SETREGS, target, 0, (long)regs) == -1)
+ 	if(ptrace(PTRACE_SETREGS_MACRO, target, 0, (long)regs) == -1)
 	{
 		fprintf(stderr, "ptrace(PTRACE_SETREGS) failed\n");
 		exit(1);
@@ -225,7 +225,7 @@ void ptrace_setregs(pid_t target, const struct user_regs_struct *regs)
 siginfo_t ptrace_getsiginfo(pid_t target)
 {
 	siginfo_t targetsig;
-	if(ptrace(PTRACE_GETSIGINFO, target, NULL, &targetsig) == -1)
+	if(ptrace(PTRACE_GETSIGINFO_MACRO, target, NULL, &targetsig) == -1)
 	{
 		fprintf(stderr, "ptrace(PTRACE_GETSIGINFO) failed\n");
 		exit(1);
@@ -255,7 +255,7 @@ void ptrace_read(int pid, unsigned long addr, void *vptr, int len)
 
 	while (bytesRead < len)
 	{
-		word = ptrace(PTRACE_PEEKTEXT, pid, addr + bytesRead, NULL);
+		word = ptrace(PTRACE_PEEKTEXT_MACRO, pid, addr + bytesRead, NULL);
 		if(word == -1)
 		{
 			fprintf(stderr, "ptrace(PTRACE_PEEKTEXT) failed\n");
@@ -288,7 +288,7 @@ void ptrace_write(int pid, unsigned long addr, void *vptr, int len)
 	while (byteCount < len)
 	{
 		memcpy(&word, vptr + byteCount, sizeof(word));
-		word = ptrace(PTRACE_POKETEXT, pid, addr + byteCount, word);
+		word = ptrace(PTRACE_POKETEXT_MACRO, pid, addr + byteCount, word);
 		if(word == -1)
 		{
 			fprintf(stderr, "ptrace(PTRACE_POKETEXT) failed\n");
@@ -322,7 +322,7 @@ void checktargetsig(int pid)
 	{
 		fprintf(stderr, "instead of expected SIGTRAP, target stopped with signal %d: %s\n", targetsig.si_signo, strsignal(targetsig.si_signo));
 		fprintf(stderr, "sending process %d a SIGSTOP signal for debugging purposes\n", pid);
-		ptrace(PTRACE_CONT, pid, NULL, SIGSTOP);
+		ptrace(PTRACE_CONT_MACRO, pid, NULL, SIGSTOP);
 		exit(1);
 	}
 }

@@ -1,6 +1,8 @@
+#define _GNU_SOURCE     // 必须定义在包含任何头文件之前
 
-#include <sys/ptrace.h>
+
 #include <sys/types.h>
+#include <sys/ptrace.h>
 #include <sys/wait.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -22,6 +24,11 @@
 #define NEW_LINE		4	// New Line 4 Address
 #endif
 
+
+
+
+
+
 int dump_memory(pid_t pid, uintptr_t startAddress, uintptr_t endAddress)
 {
 	uintptr_t addr1, addr2;
@@ -36,11 +43,12 @@ int dump_memory(pid_t pid, uintptr_t startAddress, uintptr_t endAddress)
 	for ( ; addr1 < addr2; addr1 += NEXT_ADDRESS)
 	{
 		errno = 0;
-		if (((data = ptrace(PTRACE_PEEKDATA, pid, (void *)addr1)) == (uintptr_t)-1) && errno)
+		
+		if (((data = ptrace(PTRACE_PEEKDATA_MACRO, pid, (void *)addr1)) == (uintptr_t)-1) && errno)
 		{
 			printf("PTRACE_PEEKDATA");
 
-			if (ptrace(PTRACE_DETACH, pid, NULL, NULL) == -1)
+			if (ptrace(PTRACE_DETACH_MACRO, pid, NULL, NULL) == -1)
 			{
 				printf("PTRACE_DETACH\n");
 				return(1);
@@ -79,7 +87,8 @@ int dump_memory(pid_t pid, uintptr_t startAddress, uintptr_t endAddress)
 		{
 	        // Show printable characters
 	        printf("  ");
-	        for (int j = 0; j < nread; j++)
+			int j = 0;
+	        for ( j = 0; j < nread; j++)
 	        {
 	            if (cbuf[j] < 32)
 	            	printf(".");
@@ -215,7 +224,7 @@ long freespaceaddr(pid_t pid)
 	{
 		exit(1);
 	}
-	while (fgets(line, 850, fp) != NULL)
+	while (fgets(line, sizeof(line)-1, fp) != NULL)
 	{
 		sscanf(line, "%lx-%lx %s %lx %s %ld %s", 
 				&addr1, &addr2, perms, &num1, mod, &num2, module);
@@ -265,15 +274,17 @@ long getlibcaddr(pid_t pid)
 		exit(1);
 	}
 	//7f599106a000-7f599106c000 rw-p 001eb000 08:01 4456534 /lib/x86_64-linux-gnu/libc-2.27.so
-	while (fgets(line, 850, fp) != NULL)
+	while (fgets(line, sizeof(line) -1, fp) != NULL)
 	{
 		sscanf(line, "%lx-%lx %s %lx %s %ld %s", 
 				&addr1, &addr2, perms, &num1, mod, &num2, module);
 
-		if (strstr(line, "libc-") != NULL)		//libc-2.27.so
-		{
-//			printf("FOUND Libc\n");
-			break;
+		if(strcmp(perms,"r-xp") == 0){
+			if (strstr(line, "/libc-") != NULL || strstr(line, "/libc.so.") != NULL)		//libc-2.27.so
+			{
+		//			printf("FOUND Libc\n");
+				break;
+			}
 		}
 	}
 	fclose(fp);
@@ -320,7 +331,7 @@ int checkloaded(pid_t pid, char* libname)
 	// Get the Base File Name
 	char *szlibBase = basename(libname);
 
-	while (fgets(line, 850, fp) != NULL)
+	while (fgets(line, sizeof(line)-1, fp) != NULL)
 	{
 		sscanf(line, "%lx-%lx %s %lx %s %ld %s", 
 				&addr1, &addr2, perms, &num1, mod, &num2, module);
@@ -356,7 +367,7 @@ int checkloaded(pid_t pid, char* libname)
 
 long getFunctionAddress(char* funcName)
 {
-	void* self = dlopen("libc.so.6", RTLD_LAZY);
+	void* self = dlopen(LIBC_PATH, RTLD_LAZY);
 	void* funcAddr = dlsym(self, funcName);
 	return (long)funcAddr;
 }
@@ -417,7 +428,8 @@ void dump_buffer(unsigned char buf[], int size)
     int nread = 0;
 
     // Dump the Buffer
-    for (int i = 0; i < size; i += 8)
+	int i = 0;
+    for ( i = 0; i < size; i += 8)
     {
         printf("0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X 0x%02X ",
             buf[i], buf[i+1], buf[i+2], buf[i+3], buf[i+4], buf[i+5], buf[i+6], buf[i+7]);
@@ -435,7 +447,8 @@ void dump_buffer(unsigned char buf[], int size)
         {
             // Show printable characters
             printf("  ");
-            for (int j = 0; j < nread; j++)
+			int j = 0;
+            for ( j = 0; j < nread; j++)
             {
                 if (cbuf[j] < 32 || cbuf[j] > 126)
                     printf(". ");

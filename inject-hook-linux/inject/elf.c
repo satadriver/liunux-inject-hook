@@ -119,7 +119,8 @@ int injector__collect_libc_information(injector_t *injector)
         goto cleanup;
     }
 
-    dlopen_st_name = find_strtab_offset(fp, str_offset, str_size, "__libc_dlopen_mode");
+    dlopen_st_name = find_strtab_offset(fp, str_offset, str_size, "dlopen");
+    //dlopen_st_name = find_strtab_offset(fp, str_offset, str_size, "__libc_dlopen_mode");
     if (dlopen_st_name == 0) {
         injector__set_errmsg("failed to find __libc_dlopen_mode in the .dynstr section.");
         rv = INJERR_NO_FUNCTION;
@@ -210,12 +211,17 @@ static int open_libc(FILE **fp_out, pid_t pid, size_t *addr)
     while (fgets(buf, sizeof(buf), fp) != NULL) {
         unsigned long saddr, eaddr;
         if (sscanf(buf, "%lx-%lx r-xp", &saddr, &eaddr) == 2) {
-            char *p = strstr(buf, "/libc-2.");
+ 
+            char *p = strstr(buf, "/libc-");
+            if(p == 0){
+                p = strstr(buf,"/libc.so.");
+            }
+
             if (p != NULL) {
-                char *endptr;
-                p += strlen("/libc-2.");
-                strtol(p, &endptr, 10);
-                if (strcmp(endptr, ".so\n") == 0) {
+            //    char *endptr;
+            //    p += strlen("/libc-2.");
+            //    strtol(p, &endptr, 10);
+            //    if (strcmp(endptr, ".so\n") == 0) {
                     fclose(fp);
                     p = strchr(buf, '/');
                     p[strlen(p) - 1] = '\0';
@@ -227,11 +233,11 @@ static int open_libc(FILE **fp_out, pid_t pid, size_t *addr)
                     *addr = saddr;
                     *fp_out = fp;
                     return 0;
-                } else if (strcmp(endptr, ".so (deleted)\n") == 0) {
-                    injector__set_errmsg("The C library when the process started was removed");
-                    fclose(fp);
-                    return INJERR_NO_LIBRARY;
-                }
+            //    } else if (strcmp(endptr, ".so (deleted)\n") == 0) {
+            //        injector__set_errmsg("The C library when the process started was removed");
+            //        fclose(fp);
+            //        return INJERR_NO_LIBRARY;
+            //    }
             }
         }
     }
